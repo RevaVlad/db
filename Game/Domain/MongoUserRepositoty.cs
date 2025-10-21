@@ -32,6 +32,7 @@ namespace Game.Domain
         public UserEntity GetOrCreateByLogin(string login)
         {
             var filter = Builders<UserEntity>.Filter.Eq(x => x.Login, login);
+            
             var updateDefinition = Builders<UserEntity>.Update
                 .SetOnInsert(x => x.Id, Guid.NewGuid())
                 .SetOnInsert(x => x.Login, login)

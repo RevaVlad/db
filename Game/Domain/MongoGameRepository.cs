@@ -7,39 +7,49 @@ namespace Game.Domain
     // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
+        private readonly IMongoCollection<GameEntity> gamesCollection;
         public const string CollectionName = "games";
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            gamesCollection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            gamesCollection.InsertOne(game);
+            return game;
         }
 
         public GameEntity FindById(Guid gameId)
         {
-            throw new NotImplementedException();
+            var filter = Builders<GameEntity>.Filter.Eq(g => g.Id, gameId);
+            return gamesCollection.Find(filter).FirstOrDefault();
         }
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            var filter = Builders<GameEntity>.Filter.Eq(g => g.Id, game.Id);
+            gamesCollection.ReplaceOne(filter, game);
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
+            var filter = Builders<GameEntity>.Filter.Eq(x => x.Status, GameStatus.WaitingToStart);
+            return gamesCollection.Find(filter).Limit(limit).ToList();
         }
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var filter = Builders<GameEntity>.Filter.And(
+                Builders<GameEntity>.Filter.Eq(g => g.Id, game.Id),
+                Builders<GameEntity>.Filter.Eq(g => g.Status, GameStatus.WaitingToStart));
+
+            var replaceOneResult = gamesCollection.ReplaceOne(filter, game);
+            
+            return replaceOneResult.IsAcknowledged && replaceOneResult.ModifiedCount == 1;
         }
     }
 }
